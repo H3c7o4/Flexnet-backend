@@ -6,6 +6,7 @@ from .. import schemas
 from ..database import get_db
 from ..hashing import Hash
 from ..models import User
+from ..oauth2 import get_current_user
 
 router = APIRouter(
     prefix='/users',
@@ -13,12 +14,18 @@ router = APIRouter(
 )
 
 @router.get('/', status_code=status.HTTP_200_OK)
-async def show_users(skip: int = 0, limit: int = 2, db: Session = Depends(get_db)):
+async def show_users(
+        skip: int = 0,
+        limit: int = 2,
+        db: Session = Depends(get_db),
+        get_current_user: schemas.User = Depends(get_current_user)):
     users = db.query(User).offset(skip).limit(limit).all()
     return users
 
 @router.get('/{id}', response_model=schemas.ShowUser, status_code=status.HTTP_200_OK)
-async def get_user(id: int, db: Session = Depends(get_db)):
+async def get_user(id: int,
+                   db: Session = Depends(get_db),
+                   get_current_user: schemas.User = Depends(get_current_user)):
     user = db.query(User).filter(User.id == id).first()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
@@ -26,7 +33,9 @@ async def get_user(id: int, db: Session = Depends(get_db)):
     return user
 
 @router.post('/', response_model=schemas.ShowUser, status_code=status.HTTP_201_CREATED)
-async def create_user(request: schemas.User, db: Session = Depends(get_db)):
+async def create_user(request: schemas.User,
+                      db: Session = Depends(get_db),
+                      get_current_user: schemas.User = Depends(get_current_user)):
     new_user = User(name=request.name, email=request.email, password=Hash.bcrypt(request.password))
     user = db.query(User).filter(User.email == request.email).first()
 
@@ -38,8 +47,11 @@ async def create_user(request: schemas.User, db: Session = Depends(get_db)):
     db.refresh(new_user)
     return new_user
 
-@router.put('/user/{id}', response_model=schemas.ShowUser, status_code=status.HTTP_202_ACCEPTED)
-async def update_user(id: int, request: schemas.User, db: Session = Depends(get_db)):
+@router.put('/{id}', response_model=schemas.ShowUser, status_code=status.HTTP_202_ACCEPTED)
+async def update_user(id: int,
+                      request: schemas.User,
+                      db: Session = Depends(get_db),
+                      get_current_user: schemas.User = Depends(get_current_user)):
     user = db.query(User).filter(User.id == id).first()
 
     if not user:
@@ -47,12 +59,14 @@ async def update_user(id: int, request: schemas.User, db: Session = Depends(get_
                             detail=f'User with the id of {id} is not available')
     user.email = request.email
     user.password = request.password
-    user.name == request.name
+    user.name = request.name
     db.commit()
-    return schemas.ShowUser()
+    return schemas.ShowUser(id=user.id, name=user.name, email=user.email)
 
-@router.delete('/user/{id}', status_code=status.HTTP_204_NO_CONTENT)
-async def delete_user(id: int, db: Session = Depends(get_db)):
+@router.delete('/{id}', status_code=status.HTTP_204_NO_CONTENT)
+async def delete_user(id: int,
+                      db: Session = Depends(get_db),
+                      get_current_user: schemas.User = Depends(get_current_user)):
     user = db.query(User).filter(User.id == id).first()
 
     if not user:
