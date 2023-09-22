@@ -89,7 +89,7 @@ def add_to_liked_movies():
 
 
 # A route to delete movie(s) from the movie(s) the user has already liked
-@pp.delete('/users/{user}/delete_liked')
+@app.delete('/users/{user}/delete_liked')
 def delete_liked_movie():
     pass
 
