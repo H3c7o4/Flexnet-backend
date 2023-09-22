@@ -1,15 +1,16 @@
-from pydantic import BaseModel
-from typing import Optional
+from pydantic import BaseModel, Field, EmailStr
+from typing import Optional, List
 
 class User(BaseModel):
     name: str
-    email: str
+    email: EmailStr
     password: str
 
 class ShowUser(BaseModel):
     id: int
     name: str
-    email: str
+    email: EmailStr
+    is_active: bool
 
     class Config():
         from_attributes = True
@@ -25,3 +26,29 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     email: Optional[str] = None
+
+class Movie(BaseModel):
+    id: int
+    film_id: int
+    title: str
+    genre: str
+    overview: str
+    image: str
+
+class Score(BaseModel):
+    user_id: int
+    film_id: int
+    value: float = Field(..., ge=0, le=5)
+
+class ShowScore(BaseModel):
+    id: int
+    user_id: int
+    film_id: int
+    value: float = Field(..., ge=0, le=5)
+
+    class Config():
+        from_attributes = True
+
+class ConfirmationEmail(BaseModel):
+    email: str
+    confirmation_link: str

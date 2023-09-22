@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.orm import Session
 
+from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
+
 
 from .. import schemas
 from ..database import get_db
@@ -34,8 +36,7 @@ async def get_user(id: int,
 
 @router.post('/', response_model=schemas.ShowUser, status_code=status.HTTP_201_CREATED)
 async def create_user(request: schemas.User,
-                      db: Session = Depends(get_db),
-                      get_current_user: schemas.User = Depends(get_current_user)):
+                      db: Session = Depends(get_db)):
     new_user = User(name=request.name, email=request.email, password=Hash.bcrypt(request.password))
     user = db.query(User).filter(User.email == request.email).first()
 
