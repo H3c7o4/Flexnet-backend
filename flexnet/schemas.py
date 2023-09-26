@@ -49,6 +49,5 @@ class ShowScore(BaseModel):
     class Config():
         from_attributes = True
 
-class ConfirmationEmail(BaseModel):
-    email: str
-    confirmation_link: str
+class EmailSchema(BaseModel):
+    email: List[EmailStr]
