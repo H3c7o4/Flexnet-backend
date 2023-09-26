@@ -1,3 +1,5 @@
+import pickle
+
 from fastapi import Depends
 from sqlalchemy import Boolean, Column, Integer, String, Float, ForeignKey
 from sqlalchemy.orm import relationship
@@ -7,7 +9,7 @@ from .database import Base, SessionLocal, get_db
 
 import csv
 import requests
-import pandas as pd
+# import pandas as pd
 
 class User(Base):
     __tablename__ = 'users'
@@ -39,22 +41,30 @@ class Score(Base):
     user = relationship(User, backref='scores')
     movie = relationship(Movie, backref='scores')
 
-"""
-db = SessionLocal()
 
-path = '/home/hector/Flexnet-backend/flexnet/routers/top10K-TMDB-movies.csv'
-# Lecture du fichier CSV avec pandas
-movies = pd.read_csv(path, encoding='utf-8')
-df = movies[['id', 'title', 'genre', 'overview']]
+#################################################################################################
+path_movies = '../Flexnet-backend/flexnet/routers/movies_list.pkl'
+p_movies = pickle.load(open(path_movies, "rb"))
+
+list_of_all_movies = []
+for i in range(10000):
+    movie_dic = {}
+    movie_dic['id'] = int(p_movies['id'][i])
+    movie_dic['title'] = p_movies['title'][i]
+    movie_dic['tags'] = p_movies['tags'][i]
+    list_of_all_movies.append(movie_dic)
+#################################################################################################
+
+db = SessionLocal()
 
 # Parcourir chaque ligne du DataFrame
 
-for index, row in df.iterrows():
-    film_id = row['id']
-    title = row['title']
-    genre = row['genre']
-    overview = row['overview']
+for elt in list_of_all_movies:
+    film_id = elt['id']
+    title = elt['title']
+    overview = elt['tags']
 
+    """
     # Requête à l'API TMDB pour récupérer le lien d'image
     api_key = "f81b405a508b46f17af55c1c0876fb15"
     endpoint = f"https://api.themoviedb.org/3/movie/{film_id}?api_key={api_key}"
@@ -62,9 +72,12 @@ for index, row in df.iterrows():
     data = response.json()
     poster_path = data.get('poster_path', '')
     image = 'https://image.tmdb.org/t/p/w500' + poster_path
+    """
 
     # Création de l'objet Film
-    film = Movie(film_id=film_id, title=title, genre=genre, overview=overview, image=image)
+    film = Movie(film_id=film_id, title=title, overview=overview)
+    #film = Movie(film_id=film_id, title=title, overview=overview, image=image)
+    #film = Movie(film_id=film_id, title=title, genre=genre, overview=overview, image=image)
 
     # Ajout de l'objet Film à la session de la base de données
     db.add(film)
@@ -72,4 +85,3 @@ for index, row in df.iterrows():
 # Validation des modifications dans la base de données
 db.commit()
 db.close()
-"""
