@@ -1,0 +1,4 @@
+flexnet-env/
+*.env
+*.env.*
+env.*
