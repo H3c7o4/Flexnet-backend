@@ -1,48 +1,15 @@
 from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.orm import Session
 
-#from typing import List
-import requests
-import pickle
-#import numpy as np
+from .utils import get_genres, get_movies_by_category, recommend, p_movies, get_similar_movies, get_top_movies_by_category, get_movies, get_movie_info, get_movie_by_title
 
-from .. import schemas
 from ..database import get_db
-from ..hashing import Hash
-from ..models import User, Movie
-from ..oauth2 import get_current_user
-from ..oauth2 import get_current_user
+from ..models import Movie
 
 router = APIRouter(
     prefix='/movies',
     tags=['Movies']
 )
-
-path_movies = '../Flexnet-backend/flexnet/routers/movies_list.pkl'
-path_similarity = '../Flexnet-backend/flexnet/routers/similarity.pkl'
-
-p_movies = pickle.load(open(path_movies, "rb"))
-movies_list = p_movies['title'].values
-
-similarity = pickle.load(open(path_similarity, "rb"))
-
-def fetch_poster(movie_id):
-    url = f'https://api.themoviedb.org/3/movie/{movie_id}?api_key=f81b405a508b46f17af55c1c0876fb15&language=en-US'
-    data = requests.get(url).json()
-    poster_path = data['poster_path']
-    full_path = 'https://image.tmdb.org/t/p/w500' + poster_path
-    return full_path
-
-def recommend(movies):
-    index = p_movies[p_movies['title'] == movies].index[0]
-    distance = sorted(list(enumerate(similarity[index])), reverse=True, key=lambda vector: vector[1])
-    recommend_movie = []
-    recommend_poster = []
-    for i in distance[0:5]:
-        movies_id = p_movies.iloc[i[0]].id
-        recommend_movie.append(p_movies.iloc[i[0]].title)
-        recommend_poster.append(fetch_poster(movies_id))
-    return recommend_movie, recommend_poster
 
 """
 #
@@ -75,33 +42,41 @@ def get_movie_by_id(film_id: int,
                         detail=f'Movie with the id {film_id} is not available')
 """
 
-@router.get('/recommend/{title}', status_code=status.HTTP_200_OK)
-async def recommend_movie(title: str, db: Session = Depends(get_db), get_current_user: schemas.User = Depends(get_current_user)):
-    recommended_movies, recommended_images = recommend(title)
+@router.get('/recommend/{film_title}', status_code=status.HTTP_200_OK)
+async def recommend_movie_by_film_title(film_title: str):
+    condition = p_movies['title'].str.contains(film_title, case=False).any()
+    if condition == False:
+        return get_similar_movies(film_title)
+    recommended_movies, recommended_images = recommend(film_title)
     list_of_recommended_movies = []
     for index in range(len(recommended_movies)):
-        movie = db.query(Movie).filter(Movie.title == recommended_movies[index]).first()
-        movie.image = recommended_images[index]
+        movie = get_movie_by_title(recommended_movies[index])
         list_of_recommended_movies.append(movie)
     return list_of_recommended_movies
 
+@router.get('/recom/{category}')
+async def recommend_top_movies_by_category(category: str):
+    return get_top_movies_by_category(category)
+
+
 @router.get('/', status_code=status.HTTP_200_OK)
 async def get_films(
-        skip: int = 0,
-        limit: int = 2,
-        db: Session = Depends(get_db),
-        get_current_user: schemas.User = Depends(get_current_user)):
-
-    movies = db.query(Movie).offset(skip).limit(limit).all()
+        skip: int = 1,
+        limit: int = 10):
+    movies = get_movies(skip, limit)
     return movies
 
 
-@router.get('/{film_id}', status_code=status.HTTP_200_OK)
-def get_movie_by_id(film_id: int,
-                    db: Session = Depends(get_db),
-                    get_current_user: schemas.User = Depends(get_current_user)):
-    movie = db.query(Movie).filter(Movie.film_id == film_id).first()
-    if not movie:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=f'Movie with the id {film_id} is not available')
+@router.get('/genres', status_code=status.HTTP_200_OK)
+async def get_genres_or_categories():
+    return {'Genres': get_genres()}
+
+@router.get('/{category_name}', status_code=status.HTTP_200_OK)
+def get_movies_from_a_genre(category_name: str, skip: int = 0, limit: int = 3):
+    return {f'Movies from {category_name} category': get_movies_by_category(category_name)[skip:skip+limit]}
+
+
+@router.get('/films/{film_id}', status_code=status.HTTP_200_OK)
+def get_movie_by_id(film_id: int):
+    movie = get_movie_info(film_id)
     return movie
