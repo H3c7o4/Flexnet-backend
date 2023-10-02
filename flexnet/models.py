@@ -43,7 +43,7 @@ class Score(Base):
 
 
 #################################################################################################
-path_movies = '../Flexnet-backend/flexnet/routers/movies_list.pkl'
+path_movies = '../flexnet-backend/flexnet/routers/movies_list.pkl'
 p_movies = pickle.load(open(path_movies, "rb"))
 
 list_of_all_movies = []
@@ -64,6 +64,7 @@ for elt in list_of_all_movies:
     title = elt['title']
     overview = elt['tags']
 
+
     """
     # Requête à l'API TMDB pour récupérer le lien d'image
     api_key = "f81b405a508b46f17af55c1c0876fb15"
@@ -73,6 +74,7 @@ for elt in list_of_all_movies:
     poster_path = data.get('poster_path', '')
     image = 'https://image.tmdb.org/t/p/w500' + poster_path
     """
+
 
     # Création de l'objet Film
     film = Movie(film_id=film_id, title=title, overview=overview)
