@@ -3,13 +3,19 @@ from fastapi.responses import HTMLResponse
 from .models import Base
 from .database import engine
 from .routers import user, authentication, movie, score
-import requests
-
-from starlette.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title='Flexnet API', version='V1.0.0')
 
 Base.metadata.create_all(engine)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 
 app.include_router(authentication.router)
 app.include_router(user.router)
