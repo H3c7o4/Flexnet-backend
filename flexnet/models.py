@@ -9,7 +9,6 @@ from .database import Base, SessionLocal, get_db
 
 import csv
 import requests
-# import pandas as pd
 
 class User(Base):
     __tablename__ = 'users'
