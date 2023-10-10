@@ -41,7 +41,6 @@ class Score(Base):
     movie = relationship(Movie, backref='scores')
 
 
-#################################################################################################
 path_movies = '../flexnet-backend/flexnet/routers/movies_list.pkl'
 p_movies = pickle.load(open(path_movies, "rb"))
 
@@ -52,7 +51,6 @@ for i in range(10000):
     movie_dic['title'] = p_movies['title'][i]
     movie_dic['tags'] = p_movies['tags'][i]
     list_of_all_movies.append(movie_dic)
-#################################################################################################
 
 db = SessionLocal()
 
